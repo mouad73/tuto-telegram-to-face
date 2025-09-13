@@ -51,7 +51,7 @@ pip install -r requirements.txt
 5. Copy your Page ID and token to `.env` file
 
 #### AliExpress API (Optional):
-1. Register at [AliExpress Open Platform](https://developers.aliexpress.com)
+1. Register at [AliExpress Open Platform](https://portals.aliexpress.com)
 2. Create an app and get your keys
 3. Add them to `.env` file
 
