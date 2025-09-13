@@ -6,7 +6,6 @@ Perfect for beginners who want to automate their social media posting!
 
 WHAT THIS SCRIPT DOES:
 - Reads new messages from your Telegram channel
-- Converts AliExpress links to affiliate links
 - Posts the content to your Facebook page
 - Downloads and shares images automatically
 - Adds custom hashtags and text
@@ -15,11 +14,10 @@ REQUIREMENTS:
 1. Python 3.7+
 2. Telegram API credentials
 3. Facebook Page Access Token
-4. AliExpress API credentials (optional)
 
 SETUP INSTRUCTIONS:
 1. Fill in the configuration section below
-2. Install required packages: pip install telethon requests aliexpress-api
+2. Install required packages: pip install telethon requests python-dotenv
 3. Run the script: python simple_telegram_to_facebook.py
 """
 
@@ -31,8 +29,6 @@ import random
 from datetime import datetime, timezone, timedelta
 from telethon.sync import TelegramClient
 from telethon.tl.functions.messages import GetHistoryRequest
-from telethon.tl.types import MessageMediaPhoto
-import re
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -52,14 +48,8 @@ TELEGRAM_CHANNEL = os.getenv('TELEGRAM_CHANNEL')
 FACEBOOK_PAGE_TOKEN = os.getenv('FACEBOOK_PAGE_TOKEN')
 FACEBOOK_PAGE_ID = os.getenv('FACEBOOK_PAGE_ID')
 
-# AliExpress Settings (Optional)
-ALIEXPRESS_APP_KEY = os.getenv('ALIEXPRESS_APP_KEY', "")
-ALIEXPRESS_SECRET_KEY = os.getenv('ALIEXPRESS_SECRET_KEY', "")
-USE_ALIEXPRESS = os.getenv('USE_ALIEXPRESS', 'False').lower() == 'true'
-
 # Bot Settings
 COPY_EXACT_TEXT = os.getenv('COPY_EXACT_TEXT', 'True').lower() == 'true'
-ADD_AFFILIATE_LINKS = os.getenv('ADD_AFFILIATE_LINKS', 'False').lower() == 'true'
 
 # Custom Text and Hashtags (Set to empty if you want exact copy)
 CUSTOM_MESSAGE = ""  # Leave empty to not add any extra text
@@ -68,7 +58,6 @@ HASHTAGS = []  # Leave empty to not add any hashtags
 
 # Copy Settings
 COPY_EXACT_TEXT = True  # Set to True to copy exactly as posted on Telegram
-ADD_AFFILIATE_LINKS = True  # Set to True if you want to convert AliExpress links
 
 # ========================================
 # END OF CONFIGURATION
@@ -147,35 +136,6 @@ def create_full_message(original_text):
     
     return full_message
 
-def generate_affiliate_link(original_link):
-    """Convert regular AliExpress link to affiliate link (if enabled)"""
-    if not ADD_AFFILIATE_LINKS or not USE_ALIEXPRESS:
-        return original_link
-    
-    try:
-        from aliexpress_api import AliexpressApi, models
-        
-        aliexpress = AliexpressApi(
-            ALIEXPRESS_APP_KEY,
-            ALIEXPRESS_SECRET_KEY,
-            models.Language.AR,
-            models.Currency.EUR,
-            'Default'
-        )
-        
-        affiliate_links = aliexpress.get_affiliate_links(
-            f"https://star.aliexpress.com/share/share.htm?platform=AE&businessType=ProductDetail&redirectUrl={original_link}?trackingId=facebook_bot"
-        )
-        
-        if affiliate_links:
-            print_status(f"Generated affiliate link successfully")
-            return affiliate_links[0].promotion_link
-        
-    except Exception as e:
-        print_status(f"Could not generate affiliate link: {e}")
-    
-    return original_link
-
 def upload_image_to_facebook(image_path):
     """Upload an image to Facebook and return the photo ID"""
     url = f"https://graph.facebook.com/v18.0/{FACEBOOK_PAGE_ID}/photos"
@@ -253,27 +213,12 @@ async def process_telegram_message(message):
         
         print_status(f"Processing message: {message.message[:50]}...")
         
-        # Start with the original message
-        final_message = message.message
-        
-        # Only process AliExpress links if affiliate links are enabled
-        if ADD_AFFILIATE_LINKS and 's.click.aliexpress.com' in message.message:
-            print_status("Processing AliExpress links...")
-            
-            # Find all AliExpress links in the message
-            ali_links = re.findall(r'(https?://s\.click\.aliexpress\.com/[^\s]+)', message.message)
-            
-            # Replace each AliExpress link with affiliate link
-            for original_link in ali_links:
-                affiliate_link = generate_affiliate_link(original_link)
-                final_message = final_message.replace(original_link, affiliate_link)
-        
         # Create final message (exact copy or with additions based on settings)
-        final_message = create_full_message(final_message)
+        final_message = create_full_message(message.message)
         
         # Handle image if present
         image_path = None
-        if message.media and isinstance(message.media, MessageMediaPhoto):
+        if message.photo:
             image_path = await download_telegram_image(message)
         
         # Post to Facebook
@@ -311,7 +256,6 @@ async def main():
     print_status(f"Telegram Channel: {TELEGRAM_CHANNEL}")
     print_status(f"Facebook Page ID: {FACEBOOK_PAGE_ID}")
     print_status(f"Copy Mode: {'Exact Copy' if COPY_EXACT_TEXT else 'With Additions'}")
-    print_status(f"Affiliate Links: {'Enabled' if ADD_AFFILIATE_LINKS else 'Disabled'}")
     
     last_check_time = get_last_check_time()
     print_status(f"Looking for messages newer than: {last_check_time}")

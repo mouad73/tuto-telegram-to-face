@@ -2,9 +2,7 @@
 
 ## 📖 What This Bot Does
 This bot automatically copies posts from your Telegram channel to your Facebook page. It's perfect for:
-- Sharing AliExpress deals
 - Auto-posting with custom hashtags
-- Converting regular links to affiliate links
 - Sharing images automatically
 
 ## 🛠️ Setup Instructions
@@ -50,11 +48,6 @@ pip install -r requirements.txt
 4. Generate a Page Access Token
 5. Copy your Page ID and token to `.env` file
 
-#### AliExpress API (Optional):
-1. Register at [AliExpress Open Platform](https://portals.aliexpress.com)
-2. Create an app and get your keys
-3. Add them to `.env` file
-
 ### Step 6: Run the Bot
 ```bash
 python simple_telegram_to_facebook.py
@@ -93,7 +86,6 @@ FACEBOOK_PAGE_ID=your_page_id
 
 # Bot Settings
 COPY_EXACT_TEXT=True
-ADD_AFFILIATE_LINKS=False
 ```
 
 ## 🚨 Troubleshooting
